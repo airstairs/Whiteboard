@@ -7,4 +7,10 @@ a local todo whiteboard built to be changed using html css and javascript for wi
 
 ![rec](recording.gif)      
 
- 
+
+
+![rec2](recording2.gif)    
+
+
+
+
