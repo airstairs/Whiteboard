@@ -1,0 +1,50 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/whiteboard/app/src/main/AndroidManifest.xml",
+      "selection": {
+        "end": {
+          "column": 0,
+          "index": 1040,
+          "line": 26
+        },
+        "start": {
+          "column": 0,
+          "index": 1040,
+          "line": 26
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/whiteboard/app/src/main/assets/index.html",
+      "selection": {
+        "end": {
+          "column": 0,
+          "index": 0,
+          "line": 0
+        },
+        "start": {
+          "column": 0,
+          "index": 0,
+          "line": 0
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/whiteboard/app/src/main/kotlin/com/xthan/whiteboard/MainActivity.kt",
+      "selection": {
+        "end": {
+          "column": 0,
+          "index": 1788,
+          "line": 50
+        },
+        "start": {
+          "column": 0,
+          "index": 1788,
+          "line": 50
+        }
+      }
+    }
+  ],
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/whiteboard/app/src/main/kotlin/com/xthan/whiteboard/MainActivity.kt"
+}

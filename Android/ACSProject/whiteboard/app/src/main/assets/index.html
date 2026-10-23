@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Whiteboard Notes</title>
+  <style>
+    /* CSS Reset & Box Sizing */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Base Body & Whiteboard Texture */
+    body {
+      min-height: 100vh;
+      padding-top: 1.5rem;
+      padding-bottom: 8rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
+      max-width: 32rem;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #1e293b;
+      background-color: #f7f9fa;
+      background-image: radial-gradient(#e1e8ed 1px, transparent 1px);
+      background-size: 20px 20px;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Floating particle animation */
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8) rotate(0deg); }
+      50% { transform: translate(-50%, -40px) scale(1.4) rotate(15deg); }
+      100% { opacity: 0; transform: translate(-50%, -70px) scale(1.8) rotate(-15deg); }
+    }
+    .star-particle {
+      position: fixed;
+      pointer-events: none;
+      font-size: 1.6rem;
+      z-index: 9999;
+      animation: floatUp 0.65s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
+    /* Main Container Card */
+    .whiteboard-card {
+      width: 100%;
+      background-color: #ffffff;
+      border-radius: 1.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      border: 4px solid #e2e8f0;
+      padding: 1.25rem;
+      position: relative;
+    }
+    @media (min-width: 768px) {
+      .whiteboard-card {
+        padding: 1.5rem;
+      }
+    }
+
+    /* Header Styling */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      border-bottom: 4px dashed #e2e8f0;
+    }
+    .header-title-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .marker-icon {
+      width: 1.75rem;
+      height: 1.75rem;
+      color: #2563eb;
+    }
+    .header-title {
+      font-size: 1.875rem;
+      font-weight: 800;
+      letter-spacing: 0.025em;
+      color: #1e293b;
+    }
+    .task-counter {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.75rem;
+      background-color: #f1f5f9;
+      color: #475569;
+      border-radius: 9999px;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Task List */
+    .todo-list {
+      list-style: none;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* Task Item */
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background-color: #f8fafc;
+      border-left: 8px solid #2563eb;
+      border-radius: 1rem;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease-in-out;
+    }
+    @media (min-width: 768px) {
+      .task-item {
+        font-size: 1.125rem;
+      }
+    }
+    .task-item:hover {
+      background-color: #eff6ff;
+    }
+    .task-item:active {
+      transform: scale(0.98);
+    }
+    .task-text {
+      flex: 1;
+      padding-right: 0.75rem;
+      word-break: break-word;
+    }
+    .task-icon {
+      width: 1.35rem;
+      height: 1.35rem;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+
+    /* Task Entry Transitions & Completed States */
+    .task-item.removing {
+      opacity: 0;
+      transform: translateX(-100%);
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+      border: 0;
+      overflow: hidden;
+    }
+    .task-item.completed {
+      opacity: 0.5;
+      text-decoration: line-through;
+      background-color: #f0f4f8;
+      border-left-color: #10b981 !important;
+    }
+    .task-item.completed .task-icon {
+      color: #10b981 !important;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 2.5rem 0;
+    }
+    .empty-state.hidden {
+      display: none;
+    }
+    .empty-state-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      color: #cbd5e1;
+      margin-bottom: 0.5rem;
+    }
+    .empty-state-text {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* Bottom Floating Action Bar */
+    .bottom-bar {
+      position: fixed;
+      bottom: 1rem;
+      left: 0;
+      right: 0;
+      max-width: 32rem;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    /* Action Buttons */
+    .btn {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      border-radius: 1rem;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      border: 2px solid transparent;
+      outline: none;
+    }
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-danger {
+      gap: 0.5rem;
+      background-color: #f43f5e;
+      color: #ffffff;
+      height: 3.5rem;
+      padding: 0 1.25rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      font-size: 1rem;
+      border-color: #e11d48;
+    }
+    .btn-danger:hover {
+      background-color: #e11d48;
+    }
+    .btn-danger:active {
+      background-color: #be123c;
+    }
+    .btn-danger:disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .btn-add {
+      background-color: #2563eb;
+      color: #ffffff;
+      height: 4rem;
+      width: 4rem;
+      border-radius: 1rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      border-color: #1d4ed8;
+    }
+    .btn-add:hover {
+      background-color: #1d4ed8;
+    }
+    .btn-add:active {
+      background-color: #1e40af;
+      transform: scale(0.90);
+    }
+
+    /* Modal Styling */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease-in-out;
+    }
+    @media (min-width: 640px) {
+      .modal-backdrop {
+        align-items: center;
+        padding: 1rem;
+      }
+    }
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-container {
+      background-color: #ffffff;
+      width: 100%;
+      max-width: 32rem;
+      border-top-left-radius: 1.5rem;
+      border-top-right-radius: 1.5rem;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      padding: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      transform: translateY(100%);
+      transition: transform 0.3s ease-in-out;
+      border-top: 4px solid #e2e8f0;
+      border-left: none;
+      border-right: none;
+      border-bottom: none;
+    }
+    @media (min-width: 640px) {
+      .modal-container {
+        border-radius: 1.5rem;
+        border: 4px solid #e2e8f0;
+        transform: translateY(0);
+      }
+    }
+    .modal-backdrop.active .modal-container {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease;
+    }
+    .modal-close-btn:hover {
+      color: #475569;
+    }
+    .modal-close-btn:active {
+      transform: scale(0.9);
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 1rem;
+      background-color: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #1e293b;
+      margin-bottom: 1rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .modal-input:focus {
+      border-color: #3b82f6;
+      background-color: #ffffff;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .btn-cancel {
+      flex: 1;
+      padding: 0.875rem 0;
+      background-color: #f1f5f9;
+      color: #334155;
+      font-size: 1rem;
+    }
+    .btn-cancel:hover {
+      background-color: #e2e8f0;
+    }
+    .btn-submit {
+      flex: 1;
+      padding: 0.875rem 0;
+      background-color: #2563eb;
+      color: #ffffff;
+      font-size: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .btn-submit:hover {
+      background-color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Main Whiteboard Container -->
+  <main class="whiteboard-card">
+    <!-- Marker Header -->
+    <header class="header">
+      <div class="header-title-container">
+        <!-- SVG Marker Icon -->
+        <svg class="marker-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+        <h1 class="header-title">TODO:</h1>
+      </div>
+      <span id="task-counter" class="task-counter">0 items left</span>
+    </header>
+
+    <!-- Task List -->
+    <ul id="todo-list" class="todo-list"></ul>
+
+    <!-- Empty State Message -->
+    <div id="empty-state" class="empty-state hidden">
+      <!-- SVG Clipboard Check Icon -->
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+        <polyline points="9 14 11 16 15 11"></polyline>
+      </svg>
+      <p class="empty-state-text">All tasks cleared! Tap + to add more.</p>
+    </div>
+  </main>
+
+  <!-- Touch-Optimized Bottom Action Bar -->
+  <div class="bottom-bar">
+    <!-- Delete All Completed Button (Bottom Left) -->
+    <button id="delete-completed-btn" aria-label="Delete completed tasks" class="btn btn-danger">
+      <svg style="width: 1.25rem; height: 1.25rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+      <span>Clear Done</span>
+    </button>
+
+    <!-- Add Task Floating Button (Bottom Right) -->
+    <button id="open-add-modal-btn" aria-label="Add new task" class="btn btn-add">
+      <svg style="width: 1.75rem; height: 1.75rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Touch-Friendly Modal Overlay for Adding New Task -->
+  <div id="add-modal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <svg style="width: 1.5rem; height: 1.5rem; color: #2563eb;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg> 
+          New Whiteboard Note
+        </h2>
+        <button id="close-modal-btn" type="button" class="modal-close-btn">
+          <svg style="width: 1.5rem; height: 1.5rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form id="add-task-form">
+        <input type="text" id="task-input" placeholder="Write task here..." class="modal-input" autocomplete="off">
+        <div class="modal-actions">
+          <button type="button" id="cancel-modal-btn" class="btn btn-cancel">
+            Cancel
+          </button>
+          <button type="submit" id="save-task-btn" class="btn btn-submit">
+            Add Note
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const todoList = document.getElementById('todo-list');
+    const deleteCompletedBtn = document.getElementById('delete-completed-btn');
+    const openAddModalBtn = document.getElementById('open-add-modal-btn');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const cancelModalBtn = document.getElementById('cancel-modal-btn');
+    const addModal = document.getElementById('add-modal');
+    const addTaskForm = document.getElementById('add-task-form');
+    const taskInput = document.getElementById('task-input');
+    const emptyState = document.getElementById('empty-state');
+    const taskCounter = document.getElementById('task-counter');
+
+    // Inline SVG Icon Helpers
+    const circleIcon = `<svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>`;
+    const checkCircleIcon = `<svg class="task-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+
+    // LocalStorage Key
+    const STORAGE_KEY = 'whiteboard_todo_tasks_v2';
+
+    // Default initial tasks if local storage is empty
+    const defaultTasks = [
+      { id: 1, text: 'clean up xOS', completed: false },
+      { id: 2, text: 'clean up xDrive', completed: false },
+      { id: 3, text: 'clean up Google Drive', completed: false },
+      { id: 4, text: 'clean up local files', completed: false },
+      { id: 5, text: 'think of game ideas', completed: false }
+    ];
+
+    // Helper function for haptic vibration feedback
+    function triggerVibration(duration = 15) {
+      if ('vibrate' in navigator) {
+        try {
+          navigator.vibrate(duration);
+        } catch (e) {}
+      }
+    }
+
+    // Save tasks array to localStorage
+    function saveTasks(tasks) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    // Load tasks array from localStorage
+    function loadTasks() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        } catch (e) {
+          console.error("Failed to parse tasks from localStorage", e);
+        }
+      }
+      // Fallback to default if nothing valid exists
+      saveTasks(defaultTasks);
+      return defaultTasks;
+    }
+
+    // Render tasks into DOM
+    function renderTasks() {
+      const tasks = loadTasks();
+      todoList.innerHTML = '';
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.dataset.id = task.id;
+        li.className = `task-item ${task.completed ? 'completed' : ''}`;
+        li.innerHTML = `
+          <span class="task-text">${escapeHTML(task.text)}</span>
+          ${task.completed ? checkCircleIcon : circleIcon}
+        `;
+        todoList.appendChild(li);
+      });
+      updateUI();
+    }
+
+    // Update UI Counters & Clear Button availability
+    function updateUI() {
+      const items = todoList.querySelectorAll('.task-item');
+      const completedItems = todoList.querySelectorAll('.task-item.completed');
+      const activeItemsCount = items.length - completedItems.length;
+
+      // Update counters
+      taskCounter.textContent = `${activeItemsCount} item${activeItemsCount === 1 ? '' : 's'} left`;
+
+      // Enable/Disable delete button
+      deleteCompletedBtn.disabled = completedItems.length === 0;
+
+      // Toggle Empty State
+      if (items.length === 0) {
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+      }
+    }
+
+    // Toggle Task Complete with Particle Effect, Vibration & Save
+    todoList.addEventListener('click', function(e) {
+      const taskItem = e.target.closest('.task-item');
+      if (!taskItem) return;
+
+      triggerVibration(25);
+
+      const id = Number(taskItem.dataset.id);
+      const isCompleted = taskItem.classList.toggle('completed');
+
+      // Update Icon
+      const existingIcon = taskItem.querySelector('.task-icon');
+      if (existingIcon) existingIcon.remove();
+      taskItem.insertAdjacentHTML('beforeend', isCompleted ? checkCircleIcon : circleIcon);
+
+      // Update tasks in localStorage
+      const tasks = loadTasks();
+      const targetTask = tasks.find(t => t.id === id);
+      if (targetTask) {
+        targetTask.completed = isCompleted;
+        saveTasks(tasks);
+      }
+
+      createParticle(e.clientX || e.touches?.[0]?.clientX, e.clientY || e.touches?.[0]?.clientY);
+      updateUI();
+    });
+
+    // Spawn floating particle effect
+    function createParticle(x, y) {
+      if (!x || !y) return;
+      const particle = document.createElement('span');
+      particle.classList.add('star-particle');
+      const stars = ['✨', '⭐', '💫', '🌟'];
+      particle.textContent = stars[Math.floor(Math.random() * stars.length)];
+      particle.style.left = `${x}px`;
+      particle.style.top = `${y}px`;
+      document.body.appendChild(particle);
+
+      setTimeout(() => {
+        particle.remove();
+      }, 650);
+    }
+
+    // Modal Control Functions with Vibrations & Keyboard Scroll Fix
+    function showModal() {
+      triggerVibration(15);
+      addModal.classList.add('active');
+      setTimeout(() => {
+        taskInput.focus();
+        taskInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+    }
+
+    function hideModal() {
+      triggerVibration(10);
+      addModal.classList.remove('active');
+      taskInput.value = '';
+      taskInput.blur();
+    }
+
+    openAddModalBtn.addEventListener('click', showModal);
+    closeModalBtn.addEventListener('click', hideModal);
+    cancelModalBtn.addEventListener('click', hideModal);
+
+    addModal.addEventListener('click', function(e) {
+      if (e.target === addModal) {
+        hideModal();
+      }
+    });
+
+    // Add New Task Logic
+    function addNewTask() {
+      const text = taskInput.value.trim();
+      if (!text) return;
+
+      triggerVibration(20);
+
+      const tasks = loadTasks();
+      const newTask = {
+        id: Date.now(),
+        text: text,
+        completed: false
+      };
+
+      tasks.push(newTask);
+      saveTasks(tasks);
+
+      const newLi = document.createElement('li');
+      newLi.dataset.id = newTask.id;
+      newLi.className = 'task-item';
+      newLi.style.opacity = '0';
+      newLi.style.transform = 'translateY(1rem)';
+      newLi.innerHTML = `
+        <span class="task-text">${escapeHTML(text)}</span>
+        ${circleIcon}
+      `;
+      todoList.appendChild(newLi);
+
+      requestAnimationFrame(() => {
+        newLi.style.opacity = '1';
+        newLi.style.transform = 'translateY(0)';
+      });
+
+      hideModal();
+      updateUI();
+    }
+
+    // Helper to sanitize HTML inputs
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, tag => 
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    // Handle form submit reliably via JS listener
+    addTaskForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      addNewTask();
+    });
+
+    // Wipe out all completed tasks
+    deleteCompletedBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const completedTasks = todoList.querySelectorAll('.task-item.completed');
+      if (completedTasks.length === 0) return;
+
+      triggerVibration(30);
+
+      const rect = deleteCompletedBtn.getBoundingClientRect();
+      createParticle(rect.left + rect.width / 2, rect.top);
+
+      let tasks = loadTasks();
+      tasks = tasks.filter(t => !t.completed);
+      saveTasks(tasks);
+
+      completedTasks.forEach((item) => {
+        item.classList.add('removing');
+        setTimeout(() => {
+          item.remove();
+          updateUI();
+        }, 250);
+      });
+    });
+
+    // Initial render from local storage
+    document.addEventListener('DOMContentLoaded', renderTasks);
+    // Direct call fallback in case DOMContentLoaded already fired
+    renderTasks();
+  </script>
+</body>
+</html>
