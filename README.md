@@ -13,7 +13,7 @@ a local todo whiteboard built to be changed using html css and javascript for wi
 
 <hr>
 
-<img src="recording.gif" width="400">
+<img src="recording.gif" width="280">
 
 
 
